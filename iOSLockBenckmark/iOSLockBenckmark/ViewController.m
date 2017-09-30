@@ -14,6 +14,7 @@
 typedef NS_ENUM(NSUInteger, LockType) {
     LockTypeOSSpinLock = 0,
     LockTypedispatch_semaphore,
+    LockTypedispatch_queue,
     LockTypepthread_mutex,
     LockTypeNSCondition,
     LockTypeNSLock,
@@ -67,6 +68,7 @@ int TimeCount = 0;
 - (IBAction)log:(id)sender {
     printf("OSSpinLock:               %8.2f ms\n", TimeCosts[LockTypeOSSpinLock] * 1000);
     printf("dispatch_semaphore:       %8.2f ms\n", TimeCosts[LockTypedispatch_semaphore] * 1000);
+    printf("dispatch_queue:           %8.2f ms\n", TimeCosts[LockTypedispatch_queue] * 1000);
     printf("pthread_mutex:            %8.2f ms\n", TimeCosts[LockTypepthread_mutex] * 1000);
     printf("NSCondition:              %8.2f ms\n", TimeCosts[LockTypeNSCondition] * 1000);
     printf("NSLock:                   %8.2f ms\n", TimeCosts[LockTypeNSLock] * 1000);
@@ -107,6 +109,16 @@ int TimeCount = 0;
         printf("dispatch_semaphore:       %8.2f ms\n", (end - begin) * 1000);
     }
     
+    {
+        dispatch_queue_t serialQueue = dispatch_queue_create("LockBenchmarkQueue", DISPATCH_QUEUE_SERIAL);
+        begin = CACurrentMediaTime();
+        for (int i = 0; i < count; i++) {
+            dispatch_sync(serialQueue, ^{ });
+        }
+        end = CACurrentMediaTime();
+        TimeCosts[LockTypedispatch_queue] += end - begin;
+        printf("dispatch_queue:           %8.2f ms\n", (end - begin) * 1000);
+    }
     
     {
         pthread_mutex_t lock;
